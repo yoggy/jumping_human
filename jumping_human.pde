@@ -193,6 +193,7 @@ void draw_picture_frame() {
 }
 
 void draw_mic_in() {
+  fill(0, 128, 0);
   for (int i = 0; i < fft_spec.length; i++) {
     rect(i * fft_barchart_width, height, fft_barchart_width, -Math.round(fft_spec[i]));
   }
