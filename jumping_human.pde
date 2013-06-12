@@ -3,6 +3,7 @@
 //
 import ddf.minim.*;
 import ddf.minim.analysis.*;
+import controlP5.*;
 
 float shutter_chance = 0.5;  // 0.0-1.0
 
@@ -22,7 +23,11 @@ AudioPlayer se_shutter;
 AudioInput  mic_in;
 FFT fft;
 float [] fft_spec;
-int fft_barchart_width = 8;
+int fft_barchart_width;
+int fft_idx = 0;
+float fft_threshold = 100.0;
+
+ControlP5 cp5;
 
 void setup() {
   size(480, 640);
@@ -44,8 +49,18 @@ void setup() {
   mic_in.mute();
   fft = new FFT(mic_in.bufferSize(), mic_in.sampleRate());
   fft.window(FFT.HAMMING);
-  fft.logAverages(22, 3);
+  fft.linAverages(30);
   fft_spec = new float[fft.avgSize()];
+  fft_barchart_width = width / fft.avgSize();
+  
+  cp5 = new ControlP5(this);
+  cp5.setColorForeground(0xff00aa00);
+  cp5.setColorBackground(0xff006600);
+  cp5.setColorLabel(0xff00dd00);
+  cp5.setColorValue(0xff88ff88);
+  cp5.setColorActive(0xff00bb00);
+  cp5.addSlider("fft_idx").setSize(100,10).setPosition(10,60).setRange(0, fft.avgSize()-1);
+  cp5.addSlider("fft_threshold").setSize(100,10).setPosition(10,80).setRange(0, fft_threshold);
 }
 
 void update() {
@@ -104,6 +119,7 @@ void stop() {
   super.stop();
 }
 
+int guard_counter = 0;
 void process_mic_in() {
   fft.forward(mic_in.mix);
   for (int i = 0; i < fft.avgSize(); ++i) {
@@ -115,17 +131,24 @@ void process_mic_in() {
     float freq = fft.indexToFreq(idx);
     println(String.format("idx=%d, freq=%.2f, avg=%.2f", idx, freq, fft.getAvg(idx)));
   }
+  
+  if (fft.getAvg(fft_idx) > fft_threshold && guard_counter ==0) {
+    guard_counter = 20;
+    fire_jump();
+  }
+  
+  if (guard_counter > 0) guard_counter --;
 }
 
 void keyPressed() {
-  fireJump();
+  fire_jump();
 }
 
 void mousePressed() {
-  fireJump();
+  fire_jump();
 }
  
-void fireJump() {
+void fire_jump() {
   long t = millis();
   float dt = (t - last_t) / 1000.0;
 
